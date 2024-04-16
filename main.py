@@ -3,8 +3,12 @@ from PyQt5.QtCore import Qt, QEvent
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QApplication, QMainWindow 
 from PyQt5.uic import loadUi
-import csv
 from datetime import datetime
+from tinydb import TinyDB
+from tinydb import Query
+import re
+
+db = TinyDB('db.json')
 
 class Window(QMainWindow):
     def __init__(self):
@@ -14,45 +18,80 @@ class Window(QMainWindow):
         #events for elements
         self.tableWidget.installEventFilter(self)
         self.addLogBtn.clicked.connect(self.addLog)
-    
+        self.tableWidget.itemChanged.connect(self.updateItem) 
     def addLog(self):
         self.createRow(
-            self.runNumbEl.text(),
             self.runNameEl.text(),
             self.itemNameEl.text(),
             self.soldForEl.text()
         )
         self.loadData()
     
-    def loadData(self):
-        with open("data.csv", "r") as file:
-            table = csv.reader(file)
-            table = list(table)
-            table.reverse()
-            self.tableWidget.setRowCount(len(table))
-            i = 0
-            for row in table:
-                date = QtWidgets.QTableWidgetItem(row[0])
-                date.setFlags(date.flags() ^ Qt.ItemIsEditable)
-                self.tableWidget.setItem(i, 0, date)
-                self.tableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(row[1]))
-                self.tableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(row[2]))
-                self.tableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(row[3]))
-                self.tableWidget.setItem(i, 4, QtWidgets.QTableWidgetItem(row[4]))
-                i += 1
-    
-    def createRow(self, runNumb, runName, itemName, soldFor):
+    def updateItem(self, item): 
+        id = item.row()+1
+
+        columns = list(db.get(doc_id=id).keys())
+        new_value = item.text()
+        db.update({columns[item.column()]: new_value} ,doc_ids=[id])
+
+    def loadData(self, search = None):
+        if search is not None:
+            Table = Query()
+            results = db.search(Table.date.matches(search, flags=re.IGNORECASE))
+            results += db.search(Table.runName.matches(search, flags=re.IGNORECASE)) 
+            results += db.search(Table.itemName.matches(search, flags=re.IGNORECASE)) 
+            results += db.search(Table.soldFor.matches(search, flags=re.IGNORECASE)) 
+        else:
+            results = db.all()    
+
+        self.tableWidget.setRowCount(len(results))
+        i = 0
+        for row in results:
+            date = QtWidgets.QTableWidgetItem(row["date"])
+            date.setFlags(date.flags() ^ Qt.ItemIsEditable)
+            self.tableWidget.setItem(i, 0, date)
+            self.tableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(row["runName"]))
+            self.tableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(row["itemName"]))
+            self.tableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(row["soldFor"]))
+            i += 1
+
+    def createRow(self, runName, itemName, soldFor):
+        print('item changed')
         date = datetime.now()    
         date = date.strftime('%d/%m/%Y %H:%M')
-        row = [date, runNumb, runName, itemName, soldFor]
-        with open("data.csv", "a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(row)
+
+        row = {
+            "date": date,
+            "runName": runName, 
+            "itemName": itemName,
+            "soldFor": soldFor
+        }
+        db.insert(row)
     
     def eventFilter(self, obj, event):
         if obj == self.tableWidget and event.type() == QEvent.KeyPress:
             key = event.key()
-            print(key)
+            # delete key: 16777223
+            if key == 16777223:
+                items = self.tableWidget.selectedIndexes()
+                if len(items) > 0:
+                    map = {}
+                    for item in items:
+                        row = item.row()
+                        col = item.column()
+                        if row not in map:
+                            map[row] = []        
+                        map[row].append(col)
+
+                    for key in map:
+                        if len(map[key]) == 4:
+                            print('print this 4 times')
+                            self.tableWidget.removeRow(key)    
+                            #delete the entire row
+                    print(map)            
+
+                #delete rows here
+
             return True
         return super().eventFilter(obj, event)
 
