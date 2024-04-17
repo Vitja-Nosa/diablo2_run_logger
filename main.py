@@ -18,15 +18,17 @@ class Window(QMainWindow):
         #events for elements
         self.tableWidget.installEventFilter(self)
         self.addLogBtn.clicked.connect(self.addLog)
-        self.tableWidget.itemChanged.connect(self.updateItem) 
+        self.tableWidget.itemChanged.connect(self.updateItem)  
+        # rowsRemoved.connect(self.rows_removed) this is a listener for when a row is removed
     def addLog(self):
         self.createRow(
             self.runNameEl.text(),
             self.itemNameEl.text(),
             self.soldForEl.text()
         )
-        self.loadData()
+        self.loadData() #TODO: eeew reloading the entire dataset after add 1 log LMAO
     
+    # this function get called whenever you update a cell also when creating row
     def updateItem(self, item): 
         id = item.row()+1
 
@@ -88,6 +90,7 @@ class Window(QMainWindow):
                             print('print this 4 times')
                             self.tableWidget.removeRow(key)    
                             #delete the entire row
+                            #TODO: order list than you can decrement and remove rows
                     print(map)            
 
                 #delete rows here
