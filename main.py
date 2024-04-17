@@ -1,14 +1,12 @@
-import sys
 from PyQt5.QtCore import Qt, QEvent
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QDialog, QApplication, QMainWindow 
+from PyQt5.QtWidgets import QDialog, QApplication, QMainWindow, QTableWidgetItem
 from PyQt5.uic import loadUi
 from datetime import datetime
-from tinydb import TinyDB
-from tinydb import Query
-import re
+from Database import Database
+import sys
 
-db = TinyDB('db.json')
+db = Database('db.json')
 
 class Window(QMainWindow):
     def __init__(self):
@@ -18,31 +16,31 @@ class Window(QMainWindow):
         #events for elements
         self.tableWidget.installEventFilter(self)
         self.addLogBtn.clicked.connect(self.addLog)
-        self.tableWidget.itemChanged.connect(self.updateItem)  
+        self.tableWidget.itemChanged.connect(db.updateItem)  
         # rowsRemoved.connect(self.rows_removed) this is a listener for when a row is removed
+
     def addLog(self):
-        self.createRow(
-            self.runNameEl.text(),
-            self.itemNameEl.text(),
-            self.soldForEl.text()
-        )
-        self.loadData() #TODO: eeew reloading the entire dataset after add 1 log LMAO
+        next_row = self.tableWidget.rowCount()
+        self.tableWidget.insertRow(next_row)
+
+        date = datetime.now()    
+        date = date.strftime('%d/%m/%Y %H:%M')
+        values = [date, self.runNameEl.text(), self.itemNameEl.text(), self.soldForEl.text()]
+
+        row = {}
+        if len(values) != len(db.COLS):
+            return False
+        for i, col in enumerate(db.COLS): 
+            row[col] = values[i] 
+        db.insert(row)
+
+        for col, value in enumerate(values):
+            item = QTableWidgetItem(value)
+            self.tableWidget.setItem(next_row, col, item)
     
-    # this function get called whenever you update a cell also when creating row
-    def updateItem(self, item): 
-        id = item.row()+1
-
-        columns = list(db.get(doc_id=id).keys())
-        new_value = item.text()
-        db.update({columns[item.column()]: new_value} ,doc_ids=[id])
-
     def loadData(self, search = None):
         if search is not None:
-            Table = Query()
-            results = db.search(Table.date.matches(search, flags=re.IGNORECASE))
-            results += db.search(Table.runName.matches(search, flags=re.IGNORECASE)) 
-            results += db.search(Table.itemName.matches(search, flags=re.IGNORECASE)) 
-            results += db.search(Table.soldFor.matches(search, flags=re.IGNORECASE)) 
+            results = db.DbSearch(search)
         else:
             results = db.all()    
 
@@ -56,19 +54,6 @@ class Window(QMainWindow):
             self.tableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(row["itemName"]))
             self.tableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(row["soldFor"]))
             i += 1
-
-    def createRow(self, runName, itemName, soldFor):
-        print('item changed')
-        date = datetime.now()    
-        date = date.strftime('%d/%m/%Y %H:%M')
-
-        row = {
-            "date": date,
-            "runName": runName, 
-            "itemName": itemName,
-            "soldFor": soldFor
-        }
-        db.insert(row)
     
     def eventFilter(self, obj, event):
         if obj == self.tableWidget and event.type() == QEvent.KeyPress:
@@ -82,20 +67,27 @@ class Window(QMainWindow):
                         row = item.row()
                         col = item.column()
                         if row not in map:
-                            map[row] = []        
+                            map[row] = []
                         map[row].append(col)
-
+                    map = {k: map[k] for k in sorted(map, reverse=True)}
                     for key in map:
-                        if len(map[key]) == 4:
-                            print('print this 4 times')
-                            self.tableWidget.removeRow(key)    
+                        if len(map[key]) == len(db.COLS):
                             #delete the entire row
-                            #TODO: order list than you can decrement and remove rows
+                            self.tableWidget.removeRow(key)
+                            print(key)    
+                            db.remove(doc_ids=[3])
+                        else:
+                            #empty item
+                            for col in map[key]:
+                                if db.COLS[col] != 'date':
+                                    new_item = QtWidgets.QTableWidgetItem('')
+                                    self.tableWidget.setItem(key, col, new_item)
+
                     print(map)            
 
                 #delete rows here
-
             return True
+
         return super().eventFilter(obj, event)
 
 app = QApplication(sys.argv)
