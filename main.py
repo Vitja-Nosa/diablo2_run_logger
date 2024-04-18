@@ -1,8 +1,10 @@
 from PyQt5.QtCore import Qt, QEvent
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QDialog, QApplication, QMainWindow, QTableWidgetItem, QAction
+from PyQt5.QtWidgets import QDialog, QApplication, QMainWindow, QTableWidgetItem, QAction, QShortcut
+from PyQt5.QtGui import QKeySequence
 from PyQt5.uic import loadUi
 from datetime import datetime
+from dialogs.Save import Save
 from Database import Database
 import sys
 
@@ -11,16 +13,20 @@ db = Database('db.json')
 class Window(QMainWindow):
     def __init__(self):
         super(Window, self).__init__()
-        loadUi("designer.ui", self)
-        self.loadData()    
+        loadUi("./uis/designer.ui", self)
+        self.loadData()
+
         #events for elements
         self.tableWidget.installEventFilter(self)
         self.addLogBtn.clicked.connect(self.addLog)
 
         #shortcuts
-        save_action = QAction('Shortcut', self)
-        save_action.setShortcut('Ctrl+S')
-        save_action.triggered.connect(self.saveTable)
+        self.save_shortcut = QShortcut(QKeySequence('Ctrl+S'), self)
+        self.save_shortcut.activated.connect(self.saveTable)
+
+    def openSave(self):
+        dialog = Save(self)
+        dialog.exec_()
 
     def addLog(self):
         next_row = self.tableWidget.rowCount()
@@ -34,6 +40,13 @@ class Window(QMainWindow):
             item = QTableWidgetItem(value)
             self.tableWidget.setItem(next_row, col, item)
 
+    def closeEvent(self, event):
+        if db.all() != self.tableToObj():
+            event.ignore()
+            self.openSave()
+        else:
+            event.accept()
+    
     def loadData(self, search = None):
         if search is not None:
             results = db.DbSearch(search)
@@ -63,7 +76,7 @@ class Window(QMainWindow):
         return data
     
     def saveTable(self):
-        data = self.tableToObj
+        data = self.tableToObj()
         db.DbSave(data)
 
     def eventFilter(self, obj, event):
@@ -91,26 +104,21 @@ class Window(QMainWindow):
                                 if db.COLS[col] != 'date':
                                     new_item = QtWidgets.QTableWidgetItem('')
                                     self.tableWidget.setItem(key, col, new_item)
-            elif key == 83:
-                data = self.tableToObj()
-                db.DbSave(data)
-                print('data saved')
             return True
-
-        def closeEvent(self, event):
-            print('hello')
-            event.ignore()
-
         return super().eventFilter(obj, event)
 
+    
 app = QApplication(sys.argv)
 window = Window()
+window.setFixedHeight(400)
+window.setFixedWidth(1000)
+window.show()
 
-widget = QtWidgets.QStackedWidget() 
-widget.setWindowTitle('Runner Log')
-widget.addWidget(window)
-widget.setFixedHeight(400)
-widget.setFixedWidth(1000)
-widget.show()
+# widget = QtWidgets.QStackedWidget() 
+# widget.setWindowTitle('Runner Log')
+# widget.addWidget(window)
+# widget.setFixedHeight(400)
+# widget.setFixedWidth(1000)
+# widget.show()
 
 app.exec_()
