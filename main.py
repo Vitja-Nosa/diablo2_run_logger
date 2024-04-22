@@ -15,7 +15,6 @@ class Window(QMainWindow):
         super(Window, self).__init__()
         loadUi("./uis/designer.ui", self)
         self.loadData()
-
         #events for elements
         self.tableWidget.installEventFilter(self)
         self.addLogBtn.clicked.connect(self.addLog)
@@ -29,16 +28,17 @@ class Window(QMainWindow):
         dialog.exec_()
 
     def addLog(self):
-        next_row = self.tableWidget.rowCount()
-        self.tableWidget.insertRow(next_row)
+        for i in range(0, 10000):
+            next_row = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(next_row)
 
-        date = datetime.now()    
-        date = date.strftime('%d/%m/%Y %H:%M')
-        values = [date, self.runNameEl.text(), self.itemNameEl.text(), self.soldForEl.text()]
+            date = datetime.now()    
+            date = date.strftime('%d/%m/%Y %H:%M')
+            values = [date, self.runNameEl.text(), self.itemNameEl.text(), self.soldForEl.text()]
 
-        for col, value in enumerate(values):
-            item = QTableWidgetItem(value)
-            self.tableWidget.setItem(next_row, col, item)
+            for col, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                self.tableWidget.setItem(next_row, col, item)
 
     def closeEvent(self, event):
         if db.all() != self.tableToObj():
