@@ -8,6 +8,7 @@ class Database(TinyDB):
         super().__init__(*args, **kwargs)
         self.COLS = ['date', 'runName', 'itemName', 'soldFor']
         self.changes = False
+        self.oldTable = None 
 
     def DbSearch(self, query):
         Table = Query()
@@ -21,3 +22,4 @@ class Database(TinyDB):
         self.changes = False
         self.truncate()
         self.insert_multiple(data)
+        

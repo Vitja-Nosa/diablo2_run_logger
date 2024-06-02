@@ -19,7 +19,7 @@
   <property name="sizeGripEnabled">
    <bool>false</bool>
   </property>
-  <widget class="QDialogButtonBox" name="buttonBox">
+<widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
      <x>40</x>
@@ -38,20 +38,20 @@
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>100</x>
+     <x>40</x>
      <y>10</y>
-     <width>141</width>
+     <width>271</width>
      <height>51</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Arial</family>
-     <pointsize>16</pointsize>
+     <pointsize>12</pointsize>
     </font>
    </property>
    <property name="text">
-    <string>SAVE??!?!?</string>
+    <string>Do you want to save your changes?</string>
    </property>
   </widget>
  </widget>

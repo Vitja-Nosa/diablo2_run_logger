@@ -28,4 +28,4 @@ class Save(QDialog):
         sys.exit()
 
     def cancel(self):
-        self.close() 
+        self.close()
