@@ -118,17 +118,10 @@ class Window(QMainWindow):
         return super().eventFilter(obj, event)
 
     
-app = QApplication(sys.argv)
-window = Window()
-window.setFixedHeight(400)
-window.setFixedWidth(1000)
-window.show()
-
-# widget = QtWidgets.QStackedWidget() 
-# widget.setWindowTitle('Runner Log')
-# widget.addWidget(window)
-# widget.setFixedHeight(400)
-# widget.setFixedWidth(1000)
-# widget.show()
-
-app.exec_()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = Window()
+    window.setFixedHeight(400)
+    window.setFixedWidth(1000)
+    window.show()
+    app.exec_()
